@@ -5,7 +5,7 @@ vendor_name=customize
 targetdir=/usr/local/Ascend/opp
 target_custom=0
 
-sourcedir=$PWD/Unspecified/packages
+sourcedir=$PWD/packages
 vendordir=vendors/$vendor_name
 
 QUIET="y"
