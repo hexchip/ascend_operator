@@ -1,0 +1,36 @@
+[
+    {
+        "op": "PermuteCustom",
+        "input_desc": [
+            {
+                "name": "input",
+                "param_type": "required",
+                "format": [
+                    "ND"
+                ],
+                "type": [
+                    "half","float","int8", "int16","int32","uint8"
+                ]
+            }
+        ],
+        "output_desc": [
+            {
+                "name": "output",
+                "param_type": "required",
+                "format": [
+                    "ND"
+                ],
+                "type": [
+                    "half","float","int8", "int16","int32","uint8"
+                ]
+            }
+        ],
+        "attr": [                                                                   
+            {
+                "name": "perm",
+                "param_type": "required",
+                "type": "list_int"
+            }
+        ]
+    }
+]
