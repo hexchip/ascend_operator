@@ -52,7 +52,7 @@ namespace optiling {
         std::cout << ")" << std::endl;
     }
 
-    static ge::graphStatus PermuteCustomTilingFunc(gert::TilingContext* context)
+    ge::graphStatus PermuteCustomTilingFunc(gert::TilingContext* context)
     {
         const auto inputOpShape = context->GetInputShape(0)->GetStorageShape();
         const auto inputShape = opShapeToVector(inputOpShape);
@@ -109,6 +109,7 @@ namespace optiling {
         // 向上对齐到BLOCK_SIZE(32字节)后的数据块数量
         const auto inputDataBlockNum = (inputElementNum + dataBlockElementNum - 1) / dataBlockElementNum;
 
+        // uint64_t ubMemSize = 262144;
         uint64_t ubMemSize;
         ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ubMemSize);
 
@@ -127,6 +128,7 @@ namespace optiling {
         const auto processCount = (inputDataBlockNum + vectorComputeUnitBlockNum -1) / vectorComputeUnitBlockNum;
         // 设备拥有的向量计算单元数量
         auto coreNum = ascendcPlatform.GetCoreNum();
+        // auto coreNum = 1;
         // 最终使用的向量计算单元数量
         coreNum = (processCount > coreNum) ? coreNum : processCount;
 
@@ -186,11 +188,11 @@ namespace optiling {
         context->SetBlockDim(coreNum);
 
         // 如需要使用系统workspace需要调用GetLibApiWorkSpaceSize获取系统workspace的大小。
-        uint32_t sysWorkspaceSize = ascendcPlatform.GetLibApiWorkSpaceSize();
-        std::cout << "sysWorkspaceSize = " << sysWorkspaceSize << std::endl;
+        // uint32_t sysWorkspaceSize = ascendcPlatform.GetLibApiWorkSpaceSize();
+        // std::cout << "sysWorkspaceSize = " << sysWorkspaceSize << std::endl;
 
-        uint32_t userWorkspaceSize = tilingData->tileElementNum * tilingData->shapeDim * sizeof(float);
-        std::cout << "userWorkspaceSize = " << userWorkspaceSize << std::endl;
+        // uint32_t userWorkspaceSize = tilingData->tileElementNum * tilingData->shapeDim * sizeof(float);
+        // std::cout << "userWorkspaceSize = " << userWorkspaceSize << std::endl;
         size_t *currentWorkspace = context->GetWorkspaceSizes(1); // 通过框架获取workspace的指针，GetWorkspaceSizes入参为所需workspace的块数。当前限制使用一块。
         currentWorkspace[0] = 0;
 
@@ -201,7 +203,9 @@ namespace optiling {
 namespace ge {
     static ge::graphStatus InferShape(gert::InferShapeContext* context) {
         const gert::Shape* inputShape = context->GetInputShape(0);
+        
         gert::Shape* outputShape = context->GetOutputShape(0);
+        outputShape->SetDimNum(inputShape->GetDimNum());
 
         const auto attr0 = context->GetAttrs()->GetListInt(0);
         const auto perm = attr0->GetData();

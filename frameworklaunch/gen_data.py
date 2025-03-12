@@ -6,8 +6,8 @@ import os
 
 def gen_golden_data_simple():
     input_x = np.arange(0, 24).reshape((2,3,4)).astype(np.float16)
-    golden = np.transpose(input_x, (1, 0, 2))
-    
+    # golden = np.transpose(input_x, (1, 0, 2))
+    golden = input_x
     os.system("mkdir -p input")
     os.system("mkdir -p output")
     input_x.tofile("./input/input_x.bin")

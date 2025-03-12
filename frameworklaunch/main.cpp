@@ -157,6 +157,8 @@ int main(int argc, char **argv)
 
     // 2. 构造输入与输出，需要根据API的接口自定义构造
     std::vector<int64_t> inputXShape = {2, 3, 4};
+    int64_t permArray[3] = {1, 0, 2};
+    auto perm = aclCreateIntArray(permArray, 3);
     std::vector<int64_t> outputZShape = {2, 3, 4};
     void *inputXDeviceAddr = nullptr;
     void *outputZDeviceAddr = nullptr;
@@ -185,9 +187,6 @@ int main(int argc, char **argv)
     uint64_t workspaceSize = 0;
     aclOpExecutor *executor;
     // 计算workspace大小并申请内存
-    int64_t permArray[3] = {1, 0, 2};
-    auto perm = aclCreateIntArray(permArray, 3);
-
     ret = aclnnPermuteCustomGetWorkspaceSize(inputX, perm, outputZ, &workspaceSize, &executor);
     CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclnnPermuteCustomGetWorkspaceSize failed. ERROR: %d\n", ret); return FAILED);
     void *workspaceAddr = nullptr;

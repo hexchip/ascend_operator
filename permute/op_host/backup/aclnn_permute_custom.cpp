@@ -12,6 +12,8 @@
 
 #include "opdev/make_op_executor.h"
 
+#include <iostream>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,14 +25,18 @@ aclnnStatus aclnnPermuteCustomGetWorkspaceSize(
     uint64_t *workspaceSize,
     aclOpExecutor **executor)
 {
+    L2_DFX_PHASE_1(aclnnPermuteCustom, DFX_IN(input, perm), DFX_OUT(out));
 
-    L2_DFX_PHASE_1(aclnnPermuteCustom,DFX_IN(input),DFX_OUT(out));
     auto uniqueExecutor = CREATE_EXECUTOR();
     aclOpExecutor *l0Executor = uniqueExecutor.get();
 
-    auto loOut = l0op::PermuteCustom(input, perm, l0Executor);
+    auto l0PermuteOut = l0op::PermuteCustom(input, perm, l0Executor);
 
-    l0op::ViewCopy(loOut, out, l0Executor);
+    auto viewCpoyRet = l0op::ViewCopy(l0PermuteOut, out, l0Executor);
+
+    if (viewCpoyRet == nullptr) {
+        std::cout << "viewCpoyRet is null" << std::endl;
+    }
 
     *workspaceSize = uniqueExecutor->GetWorkspaceSize();
     uniqueExecutor.ReleaseTo(executor);
