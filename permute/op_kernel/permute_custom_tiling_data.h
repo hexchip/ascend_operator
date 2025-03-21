@@ -1,3 +1,6 @@
+#ifndef PERMUTE_CUSTIOM_TILING_DATA_H_
+#define PERMUTE_CUSTIOM_TILING_DATA_H_
+
 #include <cstdint>
 #include <cstddef>
 
@@ -21,3 +24,5 @@ namespace optiling {
         uint64_t bigChunkTailElementNum;
     };
 }
+
+#endif // PERMUTE_CUSTIOM_TILING_DATA_H_

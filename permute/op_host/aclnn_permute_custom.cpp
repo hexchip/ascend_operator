@@ -32,9 +32,7 @@ aclnnStatus aclnnPermuteCustomGetWorkspaceSize(
 
     auto l0PermuteOut = l0op::PermuteCustom(input, perm, l0Executor);
 
-    auto l0PermuteOut2 = l0op::PermuteCustom(l0PermuteOut, perm, l0Executor);
-
-    auto viewCpoyRet = l0op::ViewCopy(l0PermuteOut2, out, l0Executor);
+    auto viewCpoyRet = l0op::ViewCopy(l0PermuteOut, out, l0Executor);
 
     if (viewCpoyRet == nullptr) {
         std::cout << "viewCpoyRet is null" << std::endl;
