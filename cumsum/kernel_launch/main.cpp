@@ -62,16 +62,18 @@ static uint64_t computeShapeSize(std::vector<uint32_t> inputShape) {
     return size;
 }
 
-template<size_t N, typename T>
-static std::vector<T> convertBitset(const std::bitset<N>& mask) {
+template<typename T>
+static std::vector<T> convertBitset(const boost::dynamic_bitset<>& mask) {
     static_assert(std::is_unsigned_v<T>, "T must be unsigned integral type");
     constexpr size_t typeBitNum = sizeof(T) * 8;
     static_assert(typeBitNum <= 64 && (typeBitNum & (typeBitNum - 1)) == 0, "typeBitNum must be power-of-two (8/16/32/64 bits)");
-    constexpr size_t partNum = (N + typeBitNum - 1) / typeBitNum;
+
+    const auto maskSize = mask.size();
+    const size_t partNum = (maskSize + typeBitNum - 1) / typeBitNum;
 
     std::vector<T> parts(partNum);
 
-    constexpr size_t frontPartNum = N / typeBitNum;
+    const size_t frontPartNum = maskSize / typeBitNum;
     for (size_t i = 0; i < frontPartNum; ++i) {
         const size_t shift = i * typeBitNum;
 
@@ -87,10 +89,10 @@ static std::vector<T> convertBitset(const std::bitset<N>& mask) {
     }
 
 
-    constexpr size_t remainingBitNum = N % typeBitNum;
-    constexpr size_t lastIndex = partNum - 1;
-    if constexpr (remainingBitNum != 0) {
-        constexpr size_t offset = frontPartNum * typeBitNum;
+    const size_t remainingBitNum = maskSize % typeBitNum;
+    const size_t lastIndex = partNum - 1;
+    if (remainingBitNum != 0) {
+        const size_t offset = frontPartNum * typeBitNum;
         T value = 0;
         
         for (size_t i = 0; i < remainingBitNum; ++i) {
@@ -102,6 +104,32 @@ static std::vector<T> convertBitset(const std::bitset<N>& mask) {
     }
 
     return parts;
+}
+
+template<typename T>
+static std::vector<std::vector<T>> generateHillisSteeleScanGatherMaskPatterns(uint32_t dataSize) {
+    const uint32_t zeroPaddingCount = dataSize / 2;
+    boost::dynamic_bitset<> mask0(zeroPaddingCount);
+    std::string mask0String;
+    boost::to_string(mask0, mask0String);
+    
+    boost::dynamic_bitset<> mask1(dataSize);
+    std::string mask1String;
+    boost::to_string(mask1.flip(), mask1String);
+    
+    boost::dynamic_bitset<> padedMask(mask1String + mask0String);
+
+    std::vector<std::vector<T>> result;
+
+    uint32_t stride = 1;
+    while(stride < dataSize) {
+        const auto maks = padedMask >> stride;
+        std::cout << maks << std::endl;
+        result.emplace_back(convertBitset<uint32_t>(maks));
+        stride *= 2;
+    }
+
+    return result;
 }
 
 static optiling::CumsumCustomTilingData TilingFunc(std::vector<uint32_t> inputShape, uint32_t elementSize) {
@@ -166,29 +194,19 @@ static optiling::CumsumCustomTilingData TilingFunc(std::vector<uint32_t> inputSh
     const auto tailDataCumsumTileHierarchy = computeCumsumTileHierarchy(finalTailDataElementNum, cumsumTileElementNum);
     std::copy(tailDataCumsumTileHierarchy.begin(), tailDataCumsumTileHierarchy.end(), tilingData.tailDataCumsumTileHierarchy);
 
-    const uint32_t zeroPaddingCount = cumsumTileElementNum / 2;
-
-
-    std::bitset<zeroPaddingCount> mask0;
-    const auto mask0String = mask0.to_string();
-
-    std::bitset<cumsumTileElementNum> mask1;
-    const auto mask1String = mask1.flip().to_string();
- 
-
-    constexpr uint32_t maskLen = cumsumTileElementNum + zeroPaddingCount;
-    std::bitset<maskLen> padedMask(mask1String + mask0String);
-
-    int16_t stride = 1;
-
-    while(stride < cumsumTileElementNum) {
-        const auto maks = padedMask >> stride;
-        std::cout << maks << std::endl;
-        const auto vec = convertBitset<maskLen, uint32_t>(maks);
-        for (auto v : vec) {
-            printf("%x\n", v);
+    const auto maskPatterns = generateHillisSteeleScanGatherMaskPatterns<uint32_t>(cumsumTileElementNum);
+    for (size_t i = 0; i < maskPatterns.size(); ++i) {
+        for (size_t j = 0; j < maskPatterns[i].size(); ++j) {
+            tilingData.hillisSteeleScanGatherMaskPatterns[i][j] = maskPatterns[i][j];
         }
-        stride *= 2;
+    }
+
+    for (int i = 0; i < 16; i++) {
+        for (int j = 0; j < 8; j++) {
+            printf("%x\n", tilingData.hillisSteeleScanGatherMaskPatterns[i][j]);
+        }
+
+        printf("\n");
     }
 
     return tilingData;
@@ -203,6 +221,8 @@ int32_t main(int32_t argc, char *argv[])
     auto elementSize = sizeof(uint16_t);
 
     const auto tilingData = TilingFunc(inputShape, elementSize);
+
+    return 0;
 
     size_t inputByteSize = computeShapeSize(inputShape) * elementSize;
     size_t outputByteSize = inputByteSize;

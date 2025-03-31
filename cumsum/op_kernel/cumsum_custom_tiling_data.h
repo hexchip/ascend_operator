@@ -24,7 +24,7 @@ namespace optiling {
 
         uint32_t tailDataCumsumTileHierarchy[MAX_HIERARCHY_LEVEL];
 
-        uint32_t gatherMaskPatterns[16][8];
+        uint32_t hillisSteeleScanGatherMaskPatterns[16][8];
     };
 }
 

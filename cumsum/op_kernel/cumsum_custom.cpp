@@ -76,24 +76,23 @@ private:
         bufOffset = (bufOffset + 32 - 1) / 32;
         bufSize = gatherMaskSrc.GetSize() / 32;
         const auto gatherMaskPattern = calcBuffer.GetWithOffset<uint32_t>(bufSize, bufOffset);
-
+        AscendC::Duplicate<uint32_t>(gatherMaskPattern, 0, bufSize);
 
         int16_t stride = 1;
+        uint32_t loop = 0;
         while(stride < dataSize) {
-
             for(uint32_t i = 0; i < gatherMaskPattern.GetSize(); i++) {
-                
+                gatherMaskPattern.SetValue(i, tilingData.hillisSteeleScanGatherMaskPatterns[loop][i])
             }
 
-            uint32_t mask = (uint32_t)1 << (32 - stride) - 1;
-            gatherMaskPattern.SetValue(0, ~mask);
-            gatherMaskPattern.SetValue(1, mask);
             uint32_t mask = gatherMaskSrc.GetSize();
-            AscendC::GatherMask(gatherMaskSrc, gatherMaskSrc, gatherMaskPattern, true, mask, {1, 1, 8, 8}, rsvdCnt);
+            uint64_t rsvdCnt = 0;
+            AscendC::GatherMask(gatherMaskSrc, gatherMaskSrc, gatherMaskPattern, true, mask, {1, 2, 8, 1}, rsvdCnt);
 
             AscendC::Duplicate<T>(shifted, 0, stride);
             AscendC::Add(data, data, shifted, dataSize);
             stride *= 2;
+            loop++;
         }
     }
 
